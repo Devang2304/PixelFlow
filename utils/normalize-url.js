@@ -1,63 +1,49 @@
-
 const normalisedUrl = (url) => {
-    let w,h,q;
-    // url => https://my-cdn.com/image.png?w=200&h=200&q=50
-    let urlParts = url.split('/');
-    console.log(urlParts) // [ 'https:', '', 'my-cdn.com', 'image.png?w=200&h=200&q=50' ]
-    let lastPart = urlParts[urlParts.length - 1];
-    let imageName = lastPart.split('?')[0];
-    const supportedExtensions = ['png', 'jpg', 'jpeg', 'webp', 'gif', 'svg'];
-    let extension = imageName.split('.')[1];
-    if(!supportedExtensions.includes(extension)){
-        console.error('Unsupported image format');
-        return;
-    }
-    let params = lastPart.split('?')[1];
-    let paramsArray = params.split('&');
-    console.log(paramsArray) // [ 'w=200', 'h=200', 'q=50' ]
-    let makeLowerCaseIfNot = paramsArray.map((param) => {
-        if(!param.includes('w=') || !param.includes('h=') || !param.includes('q=')){
-            return param.toLowerCase();
-        }
-        return param;
-    });
-    makeLowerCaseIfNot.forEach((param) => {
-        if(param.includes('w=')){
-            w = Number(param.split('=')[1]);
-        }
-        if(param.includes('h=')){
-            h = Number(param.split('=')[1]);
-        }
-        if(param.includes('q=')){
-            q = Number(param.split('=')[1]);
-        }
-        });
-
-    if(w < 0 || w===NaN || w===undefined){
-        w = 0;
-    }
-    if(h < 0 || h===NaN || h===undefined){
-        h = 0;
-    }
-    if(q < 0 || q===NaN || q===undefined){
-        q = 50;
-    }
-    if(!w && h){
-        w=h;
-    }
-    if(!h && w){
-        h=w;
-    }
-    if(!q){
-        q=75;
+  try {
+    if (!url || typeof url !== "string") {
+      throw new Error("Invalid URL input");
     }
 
-    console.log(`Image Name: ${imageName}`);
-    console.log(`Width: ${w} , typeof: ${typeof w}`);
-    console.log(`Height: ${h}`);
-    console.log(`Quality: ${q}`);
+    const urlObj = new URL(url);
+    console.log(urlObj);
 
+    const filename = urlObj.pathname.split("/").pop();
+    const extension = filename.split(".").pop().toLowerCase();
 
-}
+    const supportedExtensions = ["png", "jpg", "jpeg", "webp", "gif", "svg"];
+    if (!supportedExtensions.includes(extension)) {
+      throw new Error("Unsupported image format");
+    }
 
-normalisedUrl('https://my-cdn.com/image?h=200&w=200&w=500&q=50');
+    const params = new URLSearchParams(urlObj.search);
+
+    let w = parseInt(params.get("w") || 0);
+    let h = parseInt(params.get("h") || 0);
+    let q = parseInt(params.get("q") || 75);
+
+    w = Math.max(0, Math.min(w, 10000));
+    h = Math.max(0, Math.min(h, 10000));
+
+    q = Math.max(0, Math.min(q, 100));
+
+    if (w && !h) h = w;
+    if (h && !w) w = h;
+
+    const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
+
+    if (!w && !h) {
+      return `${baseUrl}?q=${q}`;
+    }
+
+    return `${baseUrl}?w=${w}&h=${h}&q=${q}`;
+  } catch (error) {
+    console.error("URL normalization failed:", error.message);
+    return null;
+  }
+};
+
+console.log(
+  normalisedUrl(
+    "https://my-cdn.com/image.png?h=34.66"
+  )
+);
