@@ -10,5 +10,10 @@
   ],
   "author": "Devang Vartak",
   "license": "ISC",
-  "description": ""
+  "description": "",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.744.0",
+    "@aws-sdk/s3-request-presigner": "^3.744.0",
+    "dotenv": "^16.4.7"
+  }
 }
