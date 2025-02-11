@@ -2,6 +2,18 @@ const sharp = require('sharp');
 const {S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand} = require('@aws-sdk/client-s3');
 
 // JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG images are supported
+// operations to be added once basic functionality is working :
+// 1. Cropping
+// 2. rotate / flip
+// 3. Overlay/Watermark
+// 4. Blur/Sharpen
+// 5. Tint/Grayscale
+// 6. Add Borders/Padding
+// 7. Gamma Correction
+// 8. Negate
+// 9. Custom Pipelines
+
+
 
 const handler = async (event) => {
 
@@ -70,3 +82,6 @@ const handler = async (event) => {
         throw new Error(error);
     }
 };
+
+
+module.exports = { handler };
