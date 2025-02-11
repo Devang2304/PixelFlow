@@ -30,7 +30,7 @@ const uploadImageToAWS = async (bucketName,imageStream, fileName, ContentType) =
 
 const extractFileName = (url) => {
     const url = new URL(imageUrl);
-        const basePath = url.pathname.replace(/^\//, '');
+        const basePath = url.pathname.split("/").pop();
         const queryParams = url.search;
         const fileName = queryParams ? `${basePath}${queryParams}`: basePath;
         return fileName
@@ -65,7 +65,7 @@ const isFileExistInAws = async (bucketName, imageUrl) => {
 
 const getFileUrlFromAws = async (bucketName,imageUrl) => {
     try {
-        const fileName = extractFileName(imageUrl);
+        const fileName = extractFileName(imageUrl);  // need changes here cant send dir/, only need to send filename and query params
         const check = await isFileExistInAws(bucketName, fileName);
 
         if(check) {
