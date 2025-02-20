@@ -1,6 +1,7 @@
 const sharp = require('sharp');
 const {S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand} = require('@aws-sdk/client-s3');
-
+const dotenv = require('dotenv');
+dotenv.config();
 // JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG images are supported
 // operations to be added once basic functionality is working :
 // 1. Cropping
@@ -25,17 +26,17 @@ const handler = async (event) => {
         }
     });
     
-    const { fileName, bucketName ,imageUrl } = event.queryStringParameters;
-        
+    const { fileName,imageUrl,folderName } = event.queryStringParameters;
+    let data;
     try {
-            if (!bucketName || !imageUrl) {
-                throw new Error('Bucket name and file name are required');
+            if (!folderName || !imageUrl) {
+                throw new Error('folderName and file name are required');
             }
             const command = new GetObjectCommand({
-                    Bucket: bucketName,
-                    Key: fileName
+                    Bucket: process.env.ORIGINAL_IMAGE_CDN,
+                    Key: `${folderName}/${fileName}`
                 });
-                const data = await s3client.send(command);
+                 data = await s3client.send(command);
         } catch (error) {
             console.error(error);
         }
@@ -59,10 +60,10 @@ const handler = async (event) => {
         if (w && !h) h = w;
         if (h && !w) w = h;
         const resizedImage = await image.resize(w,h).toFormat(format).quality(q).toBuffer();
-        const resizedImageKey = `transformedImage/${newFileName}`;
+        const resizedImageKey = `${folderName}/${newFileName}`;
 
         const command = new PutObjectCommand({
-            Bucket: bucketName,
+            Bucket: process.env.TRANSFORMED_IMAGE_CDN,
             Key: resizedImageKey,
             Body: resizedImage,
             ContentType: `image/${format}`
