@@ -40,6 +40,12 @@ const handler = async (event) => {
         } catch (error) {
             console.error(error);
         }
+    const chunks = [];
+    for await(const chunk of data.Body) {
+        chunks.push(chunk);
+    }
+    
+    const buffer = Buffer.concat(chunks);
 
     const urlObj = new URL(imageUrl);
     let newFileName = urlObj.pathname.split("/").pop();
@@ -52,14 +58,27 @@ const handler = async (event) => {
     let q = parseInt(params.get("q") || 50);
 
     try {
-        const file = data.Body;
-        const image = sharp(file);
+        const image = sharp(buffer);
         const metadata = await image.metadata();
 
         const { format } = metadata;
         if (w && !h) h = w;
         if (h && !w) w = h;
-        const resizedImage = await image.resize(w,h).toFormat(format).quality(q).toBuffer();
+
+        let pipeline = image.resize(w, h, {
+            fit: 'inside',    
+            withoutEnlargement: true  
+          });
+        pipeline = pipeline.toFormat(format);
+        if (['jpeg', 'png', 'jpg', 'webp', 'gif'].includes(format.toLowerCase())) {
+            pipeline = pipeline.jpeg({ quality: q })
+                .gif({ quality: q })
+                .png({ quality: q })
+                .webp({ quality: q })
+        }
+        pipeline = pipeline.toBuffer();
+        
+        const resizedImage = await pipeline;
         const resizedImageKey = `${folderName}/${newFileName}`;
 
         const command = new PutObjectCommand({
@@ -83,6 +102,21 @@ const handler = async (event) => {
         throw new Error(error);
     }
 };
+
+
+
+// testing code
+handler({
+    queryStringParameters: {
+        fileName: 'ironman.jpg',
+        imageUrl: 'https://my-cdn.com/DEVANG/ironman.jpg?w=400&h=400&q=50',
+        folderName: 'DEVANG'
+    }
+}).then((result) => {
+    console.log(result);
+}).catch((error) => {
+    console.error(error);
+});
 
 
 module.exports = { handler };
