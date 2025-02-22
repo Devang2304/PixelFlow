@@ -32,6 +32,7 @@ const handler = async (event) => {
             if (!folderName || !imageUrl) {
                 throw new Error('folderName and file name are required');
             }
+            fileName = encodeURIComponent(fileName);
             const command = new GetObjectCommand({
                     Bucket: process.env.ORIGINAL_IMAGE_CDN,
                     Key: `${folderName}/${fileName}`
@@ -79,6 +80,7 @@ const handler = async (event) => {
         pipeline = pipeline.toBuffer();
         
         const resizedImage = await pipeline;
+        newFileName=encodeURIComponent(newFileName);
         const resizedImageKey = `${folderName}/${newFileName}`;
 
         const command = new PutObjectCommand({
