@@ -8,6 +8,8 @@ const normalisedUrl = (url) => {
     console.log(urlObj);
 
     const filename = urlObj.pathname.split("/").pop();
+    const folderName = urlObj.pathname.split("/").slice(1, -1).join("/");
+    console.log("filename", filename);
     const extension = filename.split(".").pop().toLowerCase();
 
     const supportedExtensions = ["png", "jpg", "jpeg", "webp", "gif", "svg"];
@@ -29,13 +31,19 @@ const normalisedUrl = (url) => {
     if (w && !h) h = w;
     if (h && !w) w = h;
 
-    const baseUrl = `${urlObj.protocol}//${urlObj.host}${urlObj.pathname}`;
-
+    const baseUrl = `${urlObj.protocol}//${urlObj.host}`;
+    var normalisedUrl;
+    var urlComponent;
     if (!w && !h) {
-      return `${baseUrl}?q=${q}`;
+      urlComponent =`${filename}?q=${q}`;
+      urlComponent=encodeURIComponent(urlComponent);
+      normalisedUrl = `${baseUrl}/${folderName}/${urlComponent}`
+      return normalisedUrl;
     }
-
-    return `${baseUrl}?w=${w}&h=${h}&q=${q}`;
+    urlComponent =`${filename}?w=${w}&h=${h}&q=${q}`;
+    urlComponent=encodeURIComponent(urlComponent);
+    normalisedUrl = `${baseUrl}/${folderName}/${urlComponent}`;
+    return normalisedUrl;
   } catch (error) {
     console.error("URL normalization failed:", error.message);
     return null;
@@ -44,6 +52,6 @@ const normalisedUrl = (url) => {
 
 console.log(
   normalisedUrl(
-    "https://my-cdn.com/image.png?h=34.66"
+    "https://cdn.com/DEVANG/System Architecture.png?w=1000&h=1000&q=50"
   )
 );
