@@ -26,7 +26,7 @@ const handler = async (event) => {
         }
     });
     
-    const { fileName,imageUrl,folderName } = event.queryStringParameters;
+    let { fileName,imageUrl,folderName } = event.queryStringParameters;
     let data;
     try {
             if (!folderName || !imageUrl) {
@@ -80,7 +80,6 @@ const handler = async (event) => {
         pipeline = pipeline.toBuffer();
         
         const resizedImage = await pipeline;
-        newFileName=encodeURIComponent(newFileName);
         const resizedImageKey = `${folderName}/${newFileName}`;
 
         const command = new PutObjectCommand({
@@ -111,7 +110,7 @@ const handler = async (event) => {
 handler({
     queryStringParameters: {
         fileName: 'ironman.jpg',
-        imageUrl: 'https://my-cdn.com/DEVANG/ironman.jpg?w=400&h=400&q=50',
+        imageUrl: 'https://my-cdn.com/DEVANG/ironman.jpg?w=259&h=259&q=50',
         folderName: 'DEVANG'
     }
 }).then((result) => {
