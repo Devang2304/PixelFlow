@@ -1,5 +1,5 @@
 const sharp = require('sharp');
-const {S3Client, PutObjectCommand, GetObjectCommand, HeadObjectCommand} = require('@aws-sdk/client-s3');
+const {S3Client, PutObjectCommand, GetObjectCommand} = require('@aws-sdk/client-s3');
 const dotenv = require('dotenv');
 dotenv.config();
 // JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG images are supported
@@ -26,13 +26,29 @@ const handler = async (event) => {
         }
     });
     
-    let { fileName,imageUrl,folderName } = event.queryStringParameters;
+    let record =event.Records[0].cf;
+    let request = record.request;
+    let uri = request.uri;
+
+        const parts = uri.split("/");
+        if(parts.length < 2){
+            console.log("Invalid URL");
+            return {
+                statusCode: 404,
+                body: "Invalid URL"
+            }
+        }
+        const folderName = parts[1];
+        const encodedFileName = parts[parts.length - 1];
+        const decodedFileName = decodeURIComponent(encodedFileName);
+
+        const [fileName, queryString] = decodedFileName.split('?');
+
     let data;
     try {
-            if (!folderName || !imageUrl) {
+            if (!folderName || !fileName) {
                 throw new Error('folderName and file name are required');
             }
-            fileName = encodeURIComponent(fileName);
             const command = new GetObjectCommand({
                     Bucket: process.env.ORIGINAL_IMAGE_CDN,
                     Key: `${folderName}/${fileName}`
@@ -48,15 +64,19 @@ const handler = async (event) => {
     
     const buffer = Buffer.concat(chunks);
 
-    const urlObj = new URL(imageUrl);
-    let newFileName = urlObj.pathname.split("/").pop();
-    const params = new URLSearchParams(urlObj.search);
-    const queryParams = urlObj.search;
-    newFileName = queryParams ? `${newFileName}${queryParams}`: newFileName;
+    let queryParams = {};
+    queryParams = queryString.split('&').reduce((params, param) => {
+        const [key, value] = param.split('=');
+        params[key] = value;
+        return params;
+    }, {});
 
-    let w = parseInt(params.get("w") || 0);
-    let h = parseInt(params.get("h") || 0);
-    let q = parseInt(params.get("q") || 50);
+    let newFileName = queryString ? `${fileName}?${queryString}`: fileName;
+
+    let w = parseInt(queryParams.w || 0);
+    let h = parseInt(queryParams.h || 0);
+    let q = parseInt(queryParams.q || 50);
+
 
     try {
         const image = sharp(buffer);
@@ -66,11 +86,16 @@ const handler = async (event) => {
         if (w && !h) h = w;
         if (h && !w) w = h;
 
-        let pipeline = image.resize(w, h, {
-            fit: 'inside',    
-            withoutEnlargement: true  
-          });
-        pipeline = pipeline.toFormat(format);
+        let pipeline;
+        if(w && h){
+            pipeline = image.resize(w, h, {
+                fit: 'inside',    
+                withoutEnlargement: true  
+              });
+              pipeline = pipeline.toFormat(format);   
+        }else{
+            pipeline = image;
+        }
         if (['jpeg', 'png', 'jpg', 'webp', 'gif'].includes(format.toLowerCase())) {
             pipeline = pipeline.jpeg({ quality: q })
                 .gif({ quality: q })
@@ -107,17 +132,19 @@ const handler = async (event) => {
 
 
 // testing code
-handler({
-    queryStringParameters: {
-        fileName: 'ironman.jpg',
-        imageUrl: 'https://my-cdn.com/DEVANG/ironman.jpg?w=259&h=259&q=50',
-        folderName: 'DEVANG'
-    }
-}).then((result) => {
-    console.log(result);
-}).catch((error) => {
-    console.error(error);
-});
+const event = {
+    Records: [
+      {
+        cf: {
+          request: {
+            uri: '/DEVANG/ironman.jpg?q=25',
+          },
+        },
+      },
+    ],
+  };
+
+  console.log(handler(event));
 
 
 module.exports = { handler };
