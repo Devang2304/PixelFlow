@@ -116,13 +116,15 @@ const handler = async (event) => {
         await s3client.send(command);
 
         return {
-            statusCode: 200,
-            headers: {
-                'Content-Type': `image/${format}`,
-            },
-            body: resizedImage.toString('base64'),
-            isBase64Encoded: true,
-        };
+            "status": "302",
+            "statusDescription": "Found",
+            "headers": {
+              "location": [{
+                "key": "Location",
+                "value": `https://bucket_pls/${resizedImageKey}`
+              }]
+            }
+          };
     } catch (error) {
         console.error(error);
         throw new Error(error);
