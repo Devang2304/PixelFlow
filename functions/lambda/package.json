@@ -1,19 +1,19 @@
 {
-  "name": "lambda",
+  "name": "image_transformer",
   "version": "1.0.0",
-  "description": "Lambda function to edit images",
+  "description": "Lambda function to perform transformation on image",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "serverless",
-    "imageTransformer"
+    "image_transformer"
   ],
   "author": "Devang Vartak",
   "license": "ISC",
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.750.0",
+    "@aws-sdk/client-s3": "^3.758.0",
     "dotenv": "^16.4.7",
     "sharp": "^0.33.5"
   }

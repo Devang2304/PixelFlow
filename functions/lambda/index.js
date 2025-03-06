@@ -1,7 +1,13 @@
 const sharp = require('sharp');
-const {S3Client, PutObjectCommand, GetObjectCommand} = require('@aws-sdk/client-s3');
+const { S3 } = require('@aws-sdk/client-s3');
 const dotenv = require('dotenv');
 dotenv.config();
+
+const s3 = new S3({ 
+    endpoint: `https://s3.ap-south-1.amazonaws.com`,
+    region: 'ap-south-1'
+});
+
 // JPEG, PNG, WebP, GIF, AVIF, TIFF and SVG images are supported
 // operations to be added once basic functionality is working :
 // 1. Cropping
@@ -17,14 +23,6 @@ dotenv.config();
 
 
 const handler = async (event) => {
-
-    const s3client = new S3Client({
-        region : process.env.AWS_REGION,
-        credentials: {
-            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
-        }
-    });
     
     let record =event.Records[0].cf;
     let request = record.request;
@@ -49,14 +47,21 @@ const handler = async (event) => {
             if (!folderName || !fileName) {
                 throw new Error('folderName and file name are required');
             }
-            const command = new GetObjectCommand({
-                    Bucket: process.env.ORIGINAL_IMAGE_CDN,
-                    Key: `${folderName}/${fileName}`
-                });
-                 data = await s3client.send(command);
+            const params = {
+                Bucket: process.env.ORIGINAL_IMAGE_CDN,
+                Key: `${folderName}/${fileName}`
+            };
+            data = await s3.getObject(params);
         } catch (error) {
+            if (error.statusCode === 404) {
+                return {
+                    statusCode: 404,
+                    body: 'Image not found'
+                };
+            }
             console.error(error);
         }
+
     const chunks = [];
     for await(const chunk of data.Body) {
         chunks.push(chunk);
@@ -107,13 +112,16 @@ const handler = async (event) => {
         const resizedImage = await pipeline;
         const resizedImageKey = `${folderName}/${newFileName}`;
 
-        const command = new PutObjectCommand({
+        const uploadParams ={
             Bucket: process.env.TRANSFORMED_IMAGE_CDN,
             Key: resizedImageKey,
             Body: resizedImage,
             ContentType: `image/${format}`
-        });
-        await s3client.send(command);
+        };
+        const uploadResult = await s3.putObject(uploadParams);
+        if (!uploadResult) {
+            throw new Error('Failed to upload resized image to S3');
+        }
 
         return {
             "status": "302",
@@ -121,7 +129,7 @@ const handler = async (event) => {
             "headers": {
               "location": [{
                 "key": "Location",
-                "value": `https://bucket_pls/${resizedImageKey}`
+                "value": `https://${process.env.TRANSFORMED_IMAGE_CDN_URL}/${resizedImageKey}`
               }]
             }
           };
@@ -132,21 +140,6 @@ const handler = async (event) => {
 };
 
 
-
-// testing code
-const event = {
-    Records: [
-      {
-        cf: {
-          request: {
-            uri: '/DEVANG/ironman.jpg?q=25',
-          },
-        },
-      },
-    ],
-  };
-
-  console.log(handler(event));
 
 
 module.exports = { handler };
