@@ -24,9 +24,7 @@ const s3 = new S3({
 
 const handler = async (event) => {
     
-    let record =event.Records[0].cf;
-    let request = record.request;
-    let uri = request.uri;
+    let uri = event.queryStringParameters.path;
 
         const parts = uri.split("/");
         if(parts.length < 2){
@@ -124,15 +122,13 @@ const handler = async (event) => {
         }
 
         return {
-            "status": "302",
-            "statusDescription": "Found",
-            "headers": {
-              "location": [{
-                "key": "Location",
-                "value": `https://${process.env.TRANSFORMED_IMAGE_CDN_URL}/${resizedImageKey}`
-              }]
-            }
+            statusCode: 302,
+            headers: {
+              Location: `${process.env.CLOUDFRONT_CDN}/${resizedImageKey}`
+            },
+            body: ""
           };
+          
     } catch (error) {
         console.error(error);
         throw new Error(error);
