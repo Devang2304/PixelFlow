@@ -1,6 +1,8 @@
 /node_modules
 .env
 rawcode.txt
+logs.txt
+cloudfront_logs.txt
 System Architecture.png
 dummy.js
 ironman.jpg

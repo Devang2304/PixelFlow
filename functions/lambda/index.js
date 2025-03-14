@@ -24,7 +24,7 @@ const s3 = new S3({
 
 const handler = async (event) => {
     
-    let uri = event.queryStringParameters.path;
+    let uri = event.path;
 
         const parts = uri.split("/");
         if(parts.length < 2){
